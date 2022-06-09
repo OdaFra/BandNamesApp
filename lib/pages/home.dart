@@ -2,8 +2,10 @@ import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../models/band.dart';
+import '../services/socket_service.dart';
 
 class HomePage extends StatefulWidget {
   @override
@@ -12,14 +14,35 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   List<Band> bands = [
-    Band(id: '1', name: 'Metallica', votes: 5),
-    Band(id: '2', name: 'Scorpion', votes: 2),
-    Band(id: '3', name: 'Queen', votes: 3),
-    Band(id: '3', name: 'Bon Jovi', votes: 4),
+    // Band(id: '1', name: 'Metallica', votes: 5),
+    // Band(id: '2', name: 'Scorpion', votes: 2),
+    // Band(id: '3', name: 'Queen', votes: 3),
+    // Band(id: '3', name: 'Bon Jovi', votes: 4),
   ];
 
   @override
+  void initState() {
+    final socketService = Provider.of<SocketService>(context, listen: false);
+    socketService.socket.on('active-bands', (payload) {
+      // print(payload);
+      this.bands = (payload as List).map((band) => Band.fromMap(band)).toList();
+    });
+    setState(() {});
+
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    final socketService = Provider.of<SocketService>(context, listen: false);
+    socketService.socket.off('active-bands');
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final socketService = Provider.of<SocketService>(context);
+
     return Scaffold(
       appBar: AppBar(
         elevation: 1,
@@ -30,6 +53,14 @@ class _HomePageState extends State<HomePage> {
             color: Colors.black87,
           ),
         ),
+        actions: [
+          Container(
+            margin: const EdgeInsets.only(right: 10),
+            child: (socketService.serverStatus == ServerStatus.Online)
+                ? Icon(Icons.check_circle, color: Colors.blue[300])
+                : Icon(Icons.offline_bolt, color: Colors.red[300]),
+          )
+        ],
         backgroundColor: Colors.white,
       ),
       body: ListView.builder(

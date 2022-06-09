@@ -2,6 +2,7 @@
 
 import 'package:flutter/cupertino.dart';
 
+// ignore: library_prefixes
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 
 enum ServerStatus {
@@ -12,26 +13,33 @@ enum ServerStatus {
 
 class SocketService with ChangeNotifier {
   ServerStatus _serverStatus = ServerStatus.Connecting;
+  late IO.Socket _socket;
 
-  get serverStatus => _serverStatus;
+  ServerStatus get serverStatus => _serverStatus;
+  IO.Socket get socket => this._socket;
+
+  Function get emit => this._socket.emit;
 
   SocketService() {
+    //<= Está sección es la del error
     _initConfig();
   }
 
   void _initConfig() {
-    IO.Socket socket = IO.io('http://192.168.0.10:3000/', {
+    _socket = IO.io('http://192.168.0.10:3000/', {
       'transports': ['websocket'],
       'autoConnect': true
     });
 
-    socket.onConnect((_) {
+    _socket.on('connect', (_) {
       _serverStatus = ServerStatus.Online;
+      print('Conectado por Socket');
       notifyListeners();
     });
 
-    socket.onDisconnect((_) {
+    _socket.on('disconnect', (_) {
       _serverStatus = ServerStatus.Offline;
+      print('Desconectado del Socket Server');
       notifyListeners();
     });
   }
